@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+chess.db
+database/chess.db
+.env

@@ -1,0 +1,638 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Chess Analyzer</title>
+
+    <link rel="stylesheet" href="/static/css/style.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css"
+    />
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+  </head>
+
+  <body>
+    <div
+      id="delete-modal"
+      style="
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.7);
+        z-index: 200;
+        align-items: center;
+        justify-content: center;
+      "
+    >
+      <div
+        style="
+          background: #0d1f0d;
+          border: 1px solid #2a4a2a;
+          border-radius: 12px;
+          padding: 24px;
+          width: 380px;
+          max-width: 90vw;
+        "
+      >
+        <div style="font-weight: 600; font-size: 15px; margin-bottom: 12px">
+          Deletar partida
+        </div>
+        <div style="font-size: 13px; color: #aaa; margin-bottom: 20px">
+          Tem certeza que quer deletar essa partida? Essa ação não pode ser
+          desfeita.
+        </div>
+        <div style="display: flex; gap: 8px; justify-content: flex-end">
+          <button
+            onclick="closeDeleteModal()"
+            style="
+              padding: 8px 16px;
+              border-radius: 6px;
+              border: 1px solid #2a4a2a;
+              background: transparent;
+              color: #aaa;
+              cursor: pointer;
+            "
+          >
+            Cancelar
+          </button>
+          <button
+            onclick="confirmDelete()"
+            style="
+              padding: 8px 16px;
+              border-radius: 6px;
+              border: none;
+              background: #da2b2b;
+              color: #fff;
+              font-weight: 600;
+              cursor: pointer;
+            "
+          >
+            Deletar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div
+      id="pgn-modal"
+      style="
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.7);
+        z-index: 200;
+        align-items: center;
+        justify-content: center;
+      "
+    >
+      <div
+        style="
+          background: #0d1f0d;
+          border: 1px solid #2a4a2a;
+          border-radius: 12px;
+          padding: 24px;
+          width: 500px;
+          max-width: 90vw;
+        "
+      >
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+          "
+        >
+          <span style="font-weight: 600; font-size: 15px">Importar PGN</span>
+          <button
+            onclick="togglePgnModal()"
+            style="
+              background: none;
+              border: none;
+              color: #888;
+              cursor: pointer;
+              font-size: 18px;
+            "
+          >
+            ✕
+          </button>
+        </div>
+        <textarea
+          id="pgn-input"
+          placeholder="Cole o PGN aqui..."
+          style="
+            width: 100%;
+            height: 200px;
+            background: #1a2e1a;
+            border: 1px solid #2a4a2a;
+            border-radius: 8px;
+            color: #eee;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            resize: vertical;
+            box-sizing: border-box;
+          "
+        ></textarea>
+        <div
+          id="pgn-status"
+          style="
+            font-size: 12px;
+            color: #888;
+            margin-top: 8px;
+            min-height: 18px;
+          "
+        ></div>
+        <div
+          style="
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            justify-content: flex-end;
+          "
+        >
+          <button
+            onclick="togglePgnModal()"
+            style="
+              padding: 8px 16px;
+              border-radius: 6px;
+              border: 1px solid #2a4a2a;
+              background: transparent;
+              color: #aaa;
+              cursor: pointer;
+            "
+          >
+            Cancelar
+          </button>
+          <button
+            onclick="importPGN()"
+            style="
+              padding: 8px 16px;
+              border-radius: 6px;
+              border: none;
+              background: #13f86b;
+              color: #000;
+              font-weight: 600;
+              cursor: pointer;
+            "
+          >
+            Importar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <nav
+      style="
+        background: #0d1f0d;
+        padding: 12px 24px;
+        display: flex;
+        align-items: center;
+        border-bottom: 1px solid #2a4a2a;
+      "
+    >
+      <span
+        style="
+          font-size: 22px;
+          font-weight: 700;
+          color: #13f86b;
+          letter-spacing: -0.5px;
+        "
+        >♟ Xeque</span
+      >
+
+      <button
+        onclick="togglePgnModal()"
+        style="
+          margin-left: auto;
+          padding: 6px 14px;
+          border-radius: 6px;
+          border: 1px solid #2a4a2a;
+          background: transparent;
+          color: #4ade80;
+          cursor: pointer;
+          font-size: 13px;
+        "
+      >
+        <i class="ti ti-upload"></i> Importar PGN
+      </button>
+    </nav>
+
+    <div class="container">
+      <div class="games-list">
+        <h2>Partidas</h2>
+        <div id="games" style="text-align: center; margin-top: 8px"></div>
+      </div>
+
+      <div class="board-area">
+        <div style="display: flex; flex-direction: column; align-items: center">
+          <div
+            style="
+              display: flex;
+              justify-content: space-between;
+              width: 660px;
+              margin-bottom: 4px;
+            "
+          >
+            <span id="player-top" style="font-size: 13px; color: #ccc"
+              >⬛ —</span
+            >
+            <button
+              onclick="flipBoard()"
+              title="Girar tabuleiro"
+              style="
+                width: 32px;
+                height: 32px;
+                border-radius: 6px;
+                border: 0.5px solid #2a4a2a;
+                background: #0d1f0d;
+                color: #eee;
+                cursor: pointer;
+                font-size: 15px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+              "
+            >
+              <i class="ti ti-rotate-clockwise"></i>
+            </button>
+          </div>
+
+          <div
+            id="board-wrapper"
+            style="position: relative; display: inline-block"
+          >
+            <div
+              style="
+                position: absolute;
+                left: -24px;
+                top: 0;
+                width: 16px;
+                height: 660px;
+                background: #222;
+                border-radius: 4px;
+                overflow: hidden;
+                display: none;
+                flex-direction: column-reverse;
+              "
+              id="eval-bar-container"
+            >
+              <div
+                id="eval-bar"
+                style="
+                  width: 100%;
+                  height: 50%;
+                  background: #eee;
+                  transition: height 0.4s;
+                "
+              ></div>
+            </div>
+            <div id="board" style="width: 660px"></div>
+
+            <svg
+              id="arrows"
+              style="
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 660px;
+                height: 660px;
+                pointer-events: none;
+                outline: none;
+              "
+            >
+              <g id="arrows-auto" style="pointer-events: none"></g>
+              <g id="arrows-manual" style="pointer-events: none"></g>
+            </svg>
+
+            <div
+              id="board-focus"
+              tabindex="0"
+              style="position: absolute; width: 1px; height: 1px; opacity: 0"
+            ></div>
+          </div>
+
+          <div
+            style="
+              display: flex;
+              justify-content: space-between;
+              width: 660px;
+              margin-top: 4px;
+              margin-bottom: 6px;
+            "
+          >
+            <span id="player-bottom" style="font-size: 13px; color: #ccc"
+              >⬜ —</span
+            >
+          </div>
+
+          <div
+            id="explore-banner"
+            style="
+              display: none;
+              align-items: center;
+              justify-content: space-between;
+              gap: 8px;
+              background: #3a2a0d;
+              border: 1px solid #8a5a1a;
+              border-radius: 8px;
+              padding: 8px 12px;
+              margin-top: 8px;
+              width: 660px;
+              font-size: 12px;
+              color: #f5a623;
+            "
+          >
+            <span>🔍 Explorando variante — os lances não são salvos</span>
+            <button
+              onclick="exitExploration()"
+              style="
+                padding: 4px 10px;
+                border-radius: 6px;
+                border: 1px solid #f5a623;
+                background: transparent;
+                color: #f5a623;
+                cursor: pointer;
+                font-size: 11px;
+              "
+            >
+              Sair
+            </button>
+          </div>
+
+          <div
+            style="
+              display: flex;
+              justify-content: center;
+              gap: 8px;
+              margin-top: 10px;
+            "
+          >
+            <button
+              onclick="navMove('start')"
+              title="Início"
+              style="
+                width: 40px;
+                height: 40px;
+                border-radius: 8px;
+                border: 0.5px solid #2a4a2a;
+                background: #0d1f0d;
+                color: #eee;
+                cursor: pointer;
+                font-size: 18px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+              "
+            >
+              <i class="ti ti-player-skip-back"></i>
+            </button>
+            <button
+              onclick="navMove('prev')"
+              title="Anterior"
+              style="
+                width: 40px;
+                height: 40px;
+                border-radius: 8px;
+                border: 0.5px solid #2a4a2a;
+                background: #0d1f0d;
+                color: #eee;
+                cursor: pointer;
+                font-size: 18px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+              "
+            >
+              <i class="ti ti-player-track-prev"></i>
+            </button>
+            <button
+              onclick="navMove('next')"
+              title="Próximo"
+              style="
+                width: 40px;
+                height: 40px;
+                border-radius: 8px;
+                border: 0.5px solid #2a4a2a;
+                background: #0d1f0d;
+                color: #eee;
+                cursor: pointer;
+                font-size: 18px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+              "
+            >
+              <i class="ti ti-player-track-next"></i>
+            </button>
+            <button
+              onclick="navMove('end')"
+              title="Fim"
+              style="
+                width: 40px;
+                height: 40px;
+                border-radius: 8px;
+                border: 0.5px solid #2a4a2a;
+                background: #0d1f0d;
+                color: #eee;
+                cursor: pointer;
+                font-size: 18px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+              "
+            >
+              <i class="ti ti-player-skip-forward"></i>
+            </button>
+          </div>
+
+          <div
+            id="eval-panel"
+            style="
+              display: none;
+              align-items: center;
+              gap: 10px;
+              background: #0d1f0d;
+              border-radius: 8px;
+              padding: 12px;
+              margin-top: 10px;
+              width: 660px;
+            "
+          >
+            <span
+              id="eval-score"
+              style="font-size: 16px; font-weight: bold; min-width: 60px"
+              >—</span
+            >
+            <span
+              id="move-label"
+              style="
+                font-size: 13px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                flex: 1;
+              "
+              >—</span
+            >
+          </div>
+
+          <div
+            id="best-move"
+            style="
+              text-align: center;
+              font-size: 13px;
+              margin-top: 6px;
+              color: #888;
+            "
+          ></div>
+        </div>
+      </div>
+
+      <div class="moves-list">
+        <h2>Lances</h2>
+
+        <div
+          id="moves"
+          style="height: 500px; overflow-y: auto; margin-top: 8px"
+        ></div>
+        <div
+          id="game-summary"
+          style="
+            margin-top: 10px;
+            background: #0d1f0d;
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 12px;
+            display: none;
+          "
+        >
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px">
+            <div>
+              <div
+                style="color: #aaa; margin-bottom: 6px; font-weight: 600"
+                id="summary-white-name"
+              >
+                ⬜ Brancas
+              </div>
+              <div style="display: flex; justify-content: space-between">
+                <span style="color: #888">Blunders</span
+                ><span id="sw-blunders" style="color: #da2b2b">0</span>
+              </div>
+              <div style="display: flex; justify-content: space-between">
+                <span style="color: #888">Mistakes</span
+                ><span id="sw-mistakes" style="color: #fb923c">0</span>
+              </div>
+              <div style="display: flex; justify-content: space-between">
+                <span style="color: #888">Inaccuracies</span
+                ><span id="sw-inaccuracies" style="color: #facc15">0</span>
+              </div>
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  margin-top: 4px;
+                  border-top: 1px solid #2a4a2a;
+                  padding-top: 4px;
+                "
+              >
+                <span style="color: #888">Precisão:</span
+                ><span id="sw-acpl" style="color: #eee">—</span>
+              </div>
+            </div>
+            <div>
+              <div
+                style="color: #aaa; margin-bottom: 6px; font-weight: 600"
+                id="summary-black-name"
+              >
+                ⬛ Pretas
+              </div>
+              <div style="display: flex; justify-content: space-between">
+                <span style="color: #888">Blunders</span
+                ><span id="sb-blunders" style="color: #da2b2b">0</span>
+              </div>
+              <div style="display: flex; justify-content: space-between">
+                <span style="color: #888">Mistakes</span
+                ><span id="sb-mistakes" style="color: #fb923c">0</span>
+              </div>
+              <div style="display: flex; justify-content: space-between">
+                <span style="color: #888">Inaccuracies</span
+                ><span id="sb-inaccuracies" style="color: #facc15">0</span>
+              </div>
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  margin-top: 4px;
+                  border-top: 1px solid #2a4a2a;
+                  padding-top: 4px;
+                "
+              >
+                <span style="color: #888">Precisão:</span
+                ><span id="sb-acpl" style="color: #eee">—</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="position: relative; margin-top: 10px; width: 100%">
+          <canvas
+            id="eval-chart-base"
+            width="326"
+            height="80"
+            style="
+              border-radius: 8px;
+              cursor: pointer;
+              width: 100%;
+              display: block;
+            "
+          ></canvas>
+          <canvas
+            id="eval-chart-cursor"
+            width="326"
+            height="80"
+            style="
+              position: absolute;
+              top: 0;
+              left: 0;
+              width: 100%;
+              height: 100%;
+              pointer-events: none;
+            "
+          ></canvas>
+        </div>
+        <div
+          id="chart-tooltip"
+          style="
+            position: fixed;
+            background: #0d1f0d;
+            border: 1px solid #2a4a2a;
+            border-radius: 6px;
+            padding: 4px 8px;
+            font-size: 11px;
+            color: #eee;
+            pointer-events: none;
+            display: none;
+            z-index: 100;
+          "
+        ></div>
+      </div>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+  </body>
+</html>
