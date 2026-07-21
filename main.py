@@ -1,6 +1,7 @@
+import os
 import uuid
 
-from fastapi import FastAPI, BackgroundTasks
+from fastapi import FastAPI, BackgroundTasks, Header, HTTPException, Depends
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from database.db import init_db, save_game
@@ -14,6 +15,13 @@ init_db()
 jobs = {}
 
 app = FastAPI()
+
+ADMIN_KEY = os.environ.get("ADMIN_KEY", "troque-essa-senha-local")
+
+def verify_admin(x_admin_key: str = Header(None)):
+    if x_admin_key != ADMIN_KEY:
+        raise HTTPException(status_code=403, detail="Não autorizado")
+
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 @app.get("/", response_class=HTMLResponse)
@@ -24,7 +32,7 @@ class ImportRequest(BaseModel):
     username: str
     max_games: int = 100
     
-@app.post("/api/import/lichess")
+@app.post("/api/import/lichess", dependencies=[Depends(verify_admin)])
 def import_lichess(req: ImportRequest, background_tasks: BackgroundTasks):
     job_id = len(jobs) + 1
     jobs[job_id] = {"status": "running"}
@@ -64,7 +72,7 @@ def list_games(offset: int = 0, limit: int = 20):
     has_more = len(games) == limit
     return {"games": games, "has_more": has_more}
 
-@app.post("/api/analyze/{game_id}")
+@app.post("/api/analyze/{game_id}", dependencies=[Depends(verify_admin)])
 def analyze(game_id: int, background_tasks: BackgroundTasks):
     game = get_game(game_id)
     if not game:
@@ -88,7 +96,7 @@ def analyze(game_id: int, background_tasks: BackgroundTasks):
     background_tasks.add_task(run)
     return {"job_id": job_id}
 
-@app.delete("/api/games/{game_id}")
+@app.delete("/api/games/{game_id}", dependencies=[Depends(verify_admin)])
 def remove_game(game_id: int):
     game = get_game(game_id)
     if not game:

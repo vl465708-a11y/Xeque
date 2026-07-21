@@ -2,6 +2,8 @@ var currentMoves = [];
 var currentIdx = -1;
 var exploring = false;
 
+const ADMIN_KEY = "383490"; // mesma senha do backend (variavel ADMIN_KEY no Render)
+
 function icon(c) {
   if (c === "blunder") return "??";
   if (c === "mistake") return "?";
@@ -79,7 +81,10 @@ async function analyzeGame(id) {
     id +
     '">0%</span></span>';
 
-  const resp = await fetch(`/api/analyze/${id}`, { method: "POST" });
+  const resp = await fetch(`/api/analyze/${id}`, {
+    method: "POST",
+    headers: { "X-Admin-Key": ADMIN_KEY },
+  });
   const data = await resp.json();
   const jobId = data.job_id;
 
@@ -129,7 +134,10 @@ async function confirmDelete() {
   if (id === null) return;
   closeDeleteModal();
 
-  const resp = await fetch(`/api/games/${id}`, { method: "DELETE" });
+  const resp = await fetch(`/api/games/${id}`, {
+    method: "DELETE",
+    headers: { "X-Admin-Key": ADMIN_KEY },
+  });
   const data = await resp.json();
 
   if (data.error) {
@@ -759,7 +767,10 @@ async function importPGN() {
 
   const resp = await fetch("/api/import/pgn", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "X-Admin-Key": ADMIN_KEY,
+    },
     body: JSON.stringify({ pgn }),
   });
   const data = await resp.json();

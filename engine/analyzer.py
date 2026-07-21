@@ -2,8 +2,10 @@ import io
 import chess, chess.pgn, chess.engine
 import os
 
+import os
+
 STOCKFISH_PATH = os.environ.get("STOCKFISH_PATH", r"D:\stockfish\stockfish-windows-x86-64-avx2.exe")
-DEPTH = 16
+DEPTH = int(os.environ.get("STOCKFISH_DEPTH", 16))
 
 def classify(cp_loss):
     if cp_loss >= 200:
